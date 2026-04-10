@@ -1,0 +1,60 @@
+import {
+  CHAT_MESSAGE_SELECTOR,
+  MAX_TEXT_LENGTH,
+  SKIP_SELECTORS,
+  SKIP_TAGS,
+  TIMESTAMP_REGEX,
+} from "../../shared/constants";
+import { store } from "../store";
+
+export function shouldTranslate(element: Element, text: string): boolean {
+  // Already translated
+  if (element.hasAttribute("data-i18n-original")) return false;
+
+  // Empty or single char
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.length < 2) return false;
+
+  // Skip tags
+  if (SKIP_TAGS.has(element.tagName)) return false;
+
+  // Timestamps and pure numbers
+  if (TIMESTAMP_REGEX.test(trimmed)) return false;
+  if (/^\d+$/.test(trimmed)) return false;
+
+  // Skip elements matching known non-translatable selectors
+  for (const selector of SKIP_SELECTORS) {
+    if (element.matches(selector) || element.closest(selector)) return false;
+  }
+
+  const state = store.getState();
+
+  // Chat message bodies (only if user opted in)
+  if (element.closest(CHAT_MESSAGE_SELECTOR)) {
+    return state.translateChatMessages;
+  }
+
+  // Chat previews in sidebar
+  if (element.closest(".summary-main")) {
+    return state.translateChatPreviews;
+  }
+
+  // Long text is likely chat content, not UI labels
+  if (trimmed.length > MAX_TEXT_LENGTH && !state.translateChatMessages) {
+    return false;
+  }
+
+  // UI labels
+  return state.translateUILabels;
+}
+
+export function isTextLeaf(element: Element): boolean {
+  // Element must have text content but no child elements with text
+  if (!element.textContent?.trim()) return false;
+
+  for (const child of element.children) {
+    if (child.textContent?.trim()) return false;
+  }
+
+  return true;
+}

@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* Toggle switch */
+.qq-i18n-toggle {
+  @apply relative inline-block w-10 h-[22px] cursor-pointer;
+}
+
+.qq-i18n-toggle input {
+  @apply opacity-0 w-0 h-0;
+}
+
+.qq-i18n-toggle .slider {
+  @apply absolute inset-0 rounded-full transition-colors duration-200;
+  background: var(--fill_standard, #ccc);
+}
+
+.qq-i18n-toggle .slider::before {
+  content: "";
+  @apply absolute w-[18px] h-[18px] left-[2px] bottom-[2px] bg-white rounded-full transition-transform duration-200;
+}
+
+.qq-i18n-toggle input:checked + .slider {
+  background: var(--brand_standard, #0099ff);
+}
+
+.qq-i18n-toggle input:checked + .slider::before {
+  @apply translate-x-[18px];
+}
+
+/* Debug mode */
+.qq-i18n-debug [data-i18n-active="true"] {
+  @apply outline-1 outline-dashed outline-blue-500/30;
+}

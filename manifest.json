@@ -1,0 +1,25 @@
+{
+  "manifest_version": 4,
+  "type": "extension",
+  "name": "QQ i18n",
+  "slug": "qq_i18n",
+  "description": "Translate QQ's entire UI into any language",
+  "version": "0.1.0",
+  "icon": "./res/icon.svg",
+  "authors": [
+    {
+      "name": "Don",
+      "link": "https://github.com/0-don"
+    }
+  ],
+  "platform": ["win32", "linux", "darwin"],
+  "injects": {
+    "main": "./dist/src/main.js",
+    "preload": "./dist/src/preload.js",
+    "renderer": "./dist/src/renderer.js"
+  },
+  "repository": {
+    "repo": "0-don/LiteLoaderQQNT-i18n",
+    "branch": "main"
+  }
+}
