@@ -1,106 +1,115 @@
-import { render } from "preact";
-import { useEffect, useState } from "preact/hooks";
-import { useTranslation } from "preact-i18next";
-import { SUPPORTED_LANGUAGES } from "../../shared/constants";
+import { render, type ComponentChildren } from "preact";
+import { useEffect, useRef, useState } from "preact/hooks";
+import { SUPPORTED_LANGUAGES, type LangCode } from "../../shared/constants";
+import { LL_ATTR } from "../../shared/selectors";
 import { clearCache, getMemoryCacheSize } from "../engine/cache";
 import { store, type I18nState } from "../store";
+import { useTranslation } from "./i18n";
 
-function Toggle(props: { checked: boolean; onChange: (v: boolean) => void }) {
+function Switch(props: { active: boolean; onChange: (v: boolean) => void }) {
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const handler = () => {
+      const current = el.hasAttribute(LL_ATTR.IS_ACTIVE);
+      if (current) el.removeAttribute(LL_ATTR.IS_ACTIVE);
+      else el.setAttribute(LL_ATTR.IS_ACTIVE, "");
+      props.onChange(!current);
+    };
+    el.addEventListener("click", handler);
+    return () => el.removeEventListener("click", handler);
+  }, [props.onChange]);
+
   return (
-    <label class="qq-i18n-toggle">
-      <input
-        type="checkbox"
-        checked={props.checked}
-        onChange={(e) => props.onChange((e.target as HTMLInputElement).checked)}
-      />
-      <span class="slider" />
-    </label>
-  );
-}
-
-function SettingRow(props: {
-  label: string;
-  desc?: string;
-  children: preact.ComponentChildren;
-}) {
-  return (
-    <div class="flex items-center justify-between py-2 min-h-9">
-      <div>
-        <div class="text-[13px]" style="color: var(--text_primary, #333)">
-          {props.label}
-        </div>
-        {props.desc && (
-          <div class="text-xs mt-0.5" style="color: var(--text_secondary, #999)">
-            {props.desc}
-          </div>
-        )}
-      </div>
-      {props.children}
-    </div>
-  );
-}
-
-function Divider() {
-  return <div class="h-px my-4" style="background: var(--border_primary, #eee)" />;
-}
-
-function Section(props: { title: string; children: preact.ComponentChildren }) {
-  return (
-    <div class="mb-6">
-      <h3 class="text-sm font-semibold mb-3" style="color: var(--text_primary, #333)">
-        {props.title}
-      </h3>
-      {props.children}
-    </div>
+    <setting-switch
+      ref={ref}
+      {...(props.active ? { [LL_ATTR.IS_ACTIVE]: "" } : {})}
+    />
   );
 }
 
 function Select(props: {
   value: string;
-  onChange: (v: string) => void;
   options: ReadonlyArray<{ code: string; label: string }>;
+  onChange: (v: string) => void;
 }) {
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const handler = (e: Event) =>
+      props.onChange((e as CustomEvent).detail.value);
+    el.addEventListener("selected", handler);
+    return () => el.removeEventListener("selected", handler);
+  }, [props.onChange]);
+
   return (
-    <select
-      class="px-2 py-1 rounded border text-[13px] min-w-40"
-      style="border-color: var(--border_primary, #ddd); background: var(--bg_bottom_standard, #fff); color: var(--text_primary, #333)"
-      value={props.value}
-      onChange={(e) => props.onChange((e.target as HTMLSelectElement).value)}
-    >
+    <setting-select ref={ref}>
       {props.options.map((o) => (
-        <option key={o.code} value={o.code}>
+        <setting-option
+          key={o.code}
+          data-value={o.code}
+          {...(o.code === props.value ? { [LL_ATTR.IS_SELECTED]: "" } : {})}
+        >
           {o.label}
-        </option>
+        </setting-option>
       ))}
-    </select>
+    </setting-select>
   );
 }
 
-function Button(props: {
-  children: preact.ComponentChildren;
-  variant?: "primary" | "danger";
-  onClick: () => void;
+function SwitchItem(props: {
+  label: string;
+  desc: string;
+  active: boolean;
+  onChange: (v: boolean) => void;
 }) {
-  const base = "px-3 py-1 rounded border text-[13px] cursor-pointer transition-colors";
-  const variants = {
-    primary:
-      "text-white border-transparent" +
-      " [background:var(--brand_standard,#0099ff)]" +
-      " hover:[background:var(--brand_hover,#007acc)]",
-    danger: "border-current [color:var(--function_error,#ff4d4f)]",
-    default:
-      "[border-color:var(--border_primary,#ddd)]" +
-      " [background:var(--bg_bottom_standard,#fff)]" +
-      " [color:var(--text_primary,#333)]" +
-      " hover:[background:var(--overlay_hover,#f5f5f5)]",
-  };
   return (
-    <button
-      class={`${base} ${variants[props.variant ?? "default"]}`}
-      onClick={props.onClick}
-    >
-      {props.children}
-    </button>
+    <setting-item>
+      <div>
+        <setting-text>{props.label}</setting-text>
+        <setting-text data-type="secondary">{props.desc}</setting-text>
+      </div>
+      <Switch active={props.active} onChange={props.onChange} />
+    </setting-item>
+  );
+}
+
+function SelectItem(props: {
+  label: string;
+  value: string;
+  options: ReadonlyArray<{ code: string; label: string }>;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <setting-item>
+      <setting-text>{props.label}</setting-text>
+      <Select
+        value={props.value}
+        options={props.options}
+        onChange={props.onChange}
+      />
+    </setting-item>
+  );
+}
+
+function StatItem(props: { label: string; value: string | number }) {
+  return (
+    <setting-item>
+      <setting-text>{props.label}</setting-text>
+      <setting-text data-type="secondary">{String(props.value)}</setting-text>
+    </setting-item>
+  );
+}
+
+function Panel(props: { children: ComponentChildren }) {
+  return (
+    <setting-panel>
+      <setting-list data-direction="column">{props.children}</setting-list>
+    </setting-panel>
   );
 }
 
@@ -113,113 +122,104 @@ function Settings() {
     return store.subscribe((s) => setState({ ...s }));
   }, []);
 
+  const total = state.cacheHits + state.cacheMisses;
   const hitRate =
-    state.cacheHits + state.cacheMisses > 0
-      ? (
-          (state.cacheHits / (state.cacheHits + state.cacheMisses)) *
-          100
-        ).toFixed(1)
-      : "0";
+    total > 0 ? `${((state.cacheHits / total) * 100).toFixed(1)}%` : "0%";
 
   return (
-    <div class="p-5">
-      <Section title={t("plugin.translation")}>
-        <SettingRow label={t("plugin.enable")} desc={t("plugin.enableDesc")}>
-          <Toggle checked={state.enabled} onChange={(v) => state.setEnabled(v)} />
-        </SettingRow>
-
-        <SettingRow label={t("plugin.sourceLang")}>
-          <Select
-            value={state.sourceLang}
-            onChange={(v) => state.setSourceLang(v)}
-            options={SUPPORTED_LANGUAGES}
+    <div>
+      <setting-section data-title={t("翻译设置")}>
+        <Panel>
+          <SwitchItem
+            label={t("启用翻译")}
+            desc={t("将QQ界面翻译为你的语言")}
+            active={state.enabled}
+            onChange={(v) => state.setEnabled(v)}
           />
-        </SettingRow>
-
-        <SettingRow label={t("plugin.targetLang")}>
-          <Select
+          <SelectItem
+            label={t("目标语言")}
             value={state.targetLang}
-            onChange={(v) => state.setTargetLang(v)}
             options={SUPPORTED_LANGUAGES}
+            onChange={(v) => state.setTargetLang(v as LangCode)}
           />
-        </SettingRow>
-
-        <Divider />
-
-        <SettingRow label={t("plugin.translateUI")} desc={t("plugin.translateUIDesc")}>
-          <Toggle
-            checked={state.translateUILabels}
+        </Panel>
+        <Panel>
+          <SwitchItem
+            label={t("翻译界面标签")}
+            desc={t("按钮、菜单、导航栏")}
+            active={state.translateUILabels}
             onChange={(v) => state.setTranslateUILabels(v)}
           />
-        </SettingRow>
-
-        <SettingRow label={t("plugin.translatePreviews")} desc={t("plugin.translatePreviewsDesc")}>
-          <Toggle
-            checked={state.translateChatPreviews}
+          <SwitchItem
+            label={t("翻译聊天预览")}
+            desc={t("侧边栏消息预览")}
+            active={state.translateChatPreviews}
             onChange={(v) => state.setTranslateChatPreviews(v)}
           />
-        </SettingRow>
-
-        <SettingRow label={t("plugin.translateMessages")} desc={t("plugin.translateMessagesDesc")}>
-          <Toggle
-            checked={state.translateChatMessages}
+          <SwitchItem
+            label={t("翻译聊天消息")}
+            desc={t("完整消息内容（API调用较多）")}
+            active={state.translateChatMessages}
             onChange={(v) => state.setTranslateChatMessages(v)}
           />
-        </SettingRow>
-      </Section>
+        </Panel>
+      </setting-section>
 
-      <Section title={t("plugin.api")}>
-        <div class="text-xs" style="color: var(--text_secondary, #999)">
-          {t("plugin.apiDesc")}
-        </div>
-        <div class="flex gap-2 mt-2">
-          <input
-            type="text"
-            class="flex-1 px-2 py-1 rounded border text-[13px]"
-            style="border-color: var(--border_primary, #ddd); background: var(--bg_bottom_standard, #fff); color: var(--text_primary, #333)"
-            value={apiInput}
-            onInput={(e) => setApiInput((e.target as HTMLInputElement).value)}
-          />
-          <Button variant="primary" onClick={() => state.setApiUrl(apiInput.trim())}>
-            {t("plugin.apply")}
-          </Button>
-        </div>
-      </Section>
-
-      <Section title={t("plugin.stats")}>
-        <div class="grid grid-cols-2 gap-2">
-          {[
-            [t("plugin.cachedTranslations"), getMemoryCacheSize()],
-            [t("plugin.translatedElements"), state.translatedElements],
-            [t("plugin.apiCalls"), state.apiCalls],
-            [t("plugin.cacheHitRate"), `${hitRate}%`],
-            [t("plugin.queue"), state.queueLength],
-            [t("plugin.apiErrors"), state.apiErrors],
-          ].map(([label, value]) => (
-            <div key={label as string} class="flex justify-between py-1.5 text-[13px]">
-              <span>{label}</span>
-              <span class="tabular-nums" style="color: var(--text_secondary, #999)">
-                {value}
-              </span>
+      <setting-section data-title={t("API配置")}>
+        <Panel>
+          <setting-item>
+            <setting-text>{t("DeepLX翻译接口地址")}</setting-text>
+          </setting-item>
+          <setting-item>
+            <div class="flex w-full gap-2 items-center">
+              <input
+                type="text"
+                value={apiInput}
+                placeholder="https://deepl.mukapp.top"
+                onInput={(e) =>
+                  setApiInput((e.target as HTMLInputElement).value)
+                }
+                class="flex-1 py-1.5 px-3 rounded text-[13px] outline-none border border-(--border_dark,#555) bg-(--fill_light_primary,#2a2a2a) text-(--text_primary,#ddd)"
+              />
+              <setting-button onClick={() => state.setApiUrl(apiInput.trim())}>
+                {t("应用")}
+              </setting-button>
             </div>
-          ))}
-        </div>
-        <div class="mt-3">
-          <Button
-            variant="danger"
-            onClick={async () => {
-              await clearCache();
-              setState({ ...store.getState() });
-            }}
-          >
-            {t("plugin.clearCache")}
-          </Button>
-        </div>
-      </Section>
+          </setting-item>
+        </Panel>
+      </setting-section>
 
-      <div class="text-xs text-center mt-4" style="color: var(--text_secondary, #999)">
-        QQ i18n v{LiteLoader.plugins.qq_i18n?.manifest?.version ?? "0.1.0"}
-      </div>
+      <setting-section data-title={t("统计数据")}>
+        <Panel>
+          <StatItem label={t("已缓存翻译")} value={getMemoryCacheSize()} />
+          <StatItem label={t("已翻译元素")} value={state.translatedElements} />
+          <StatItem label={t("API调用次数")} value={state.apiCalls} />
+          <StatItem label={t("缓存命中率")} value={hitRate} />
+          <StatItem label={t("队列")} value={state.queueLength} />
+          <StatItem label={t("API错误")} value={state.apiErrors} />
+        </Panel>
+        <Panel>
+          <setting-item>
+            <setting-text>{t("清除翻译缓存")}</setting-text>
+            <setting-button
+              data-type="secondary"
+              onClick={async () => {
+                await clearCache();
+                setState({ ...store.getState() });
+              }}
+            >
+              {t("清除翻译缓存")}
+            </setting-button>
+          </setting-item>
+        </Panel>
+      </setting-section>
+
+      <setting-text
+        data-type="secondary"
+        style={{ display: "block", textAlign: "center", marginTop: "16px" }}
+      >
+        QQ i18n v{LiteLoader.plugins["liteloaderqqnt-i18n"]?.manifest?.version ?? "0.0.0"}
+      </setting-text>
     </div>
   );
 }

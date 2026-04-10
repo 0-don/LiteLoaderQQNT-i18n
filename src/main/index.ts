@@ -8,7 +8,7 @@ const dataPath = LiteLoader.plugins[SLUG].path.data;
 const configPath = join(dataPath, "config.json");
 
 function log(...args: unknown[]) {
-  console.log("[qq-i18n]", ...args);
+  console.log("[liteloaderqqnt-i18n]", ...args);
 }
 
 function readConfig(): PluginConfig {
@@ -57,7 +57,7 @@ async function translateViaNet(
       JSON.stringify({
         text,
         source_lang: sourceLang,
-        target_lang: targetLang,
+        target_lang: targetLang
       })
     );
     request.end();
@@ -88,4 +88,5 @@ ipcMain.handle(IPC.LOG, (_event, ...args: unknown[]) => {
 
 log("Main process initialized");
 
+// Required by LiteLoader plugin lifecycle
 module.exports.onBrowserWindowCreated = () => {};

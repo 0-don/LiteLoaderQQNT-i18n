@@ -1,26 +1,26 @@
 // Static translation dictionaries loaded from i18n JSON files.
 // Bun bundles these at build time. Keys are Chinese text, values are translations.
-// To add a language: create src/i18n/{langCode}.json and import it here.
+// To add a language: create src/i18n/{code}.json and add it here.
 
 import de from "../i18n/de.json";
 import en from "../i18n/en.json";
+import type { LangCode } from "./constants";
 
-const dictionaries: Record<string, Record<string, string>> = {
+/** All available locale dictionaries, keyed by language code. */
+export const DICTIONARIES: Partial<Record<LangCode, Record<string, string>>> = {
   EN: en,
-  DE: de,
+  DE: de
 };
 
 export function getStaticTranslation(
   text: string,
-  _sourceLang: string,
-  targetLang: string
+  targetLang: LangCode
 ): string | null {
-  return dictionaries[targetLang]?.[text] ?? null;
+  return DICTIONARIES[targetLang]?.[text] ?? null;
 }
 
 export function getStaticDictionary(
-  _sourceLang: string,
-  targetLang: string
+  targetLang: LangCode
 ): Record<string, string> | null {
-  return dictionaries[targetLang] ?? null;
+  return DICTIONARIES[targetLang] ?? null;
 }

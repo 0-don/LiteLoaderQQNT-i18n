@@ -1,36 +1,28 @@
-import { get, set, keys, del, createStore } from "idb-keyval";
-import { getStaticTranslation } from "../../shared/dictionary";
+import { createStore, del, get, keys, set } from "idb-keyval";
+import { SOURCE_LANG, type LangCode } from "../../shared/constants";
+import { getStaticDictionary, getStaticTranslation } from "../../shared/dictionary";
 
-const idbStore = createStore("qq-i18n-cache", "translations");
+const idbStore = createStore("liteloaderqqnt-i18n-cache", "translations");
 
 // In-memory hot cache for synchronous lookups
 const memoryCache = new Map<string, string>();
 
-function cacheKey(
-  text: string,
-  sourceLang: string,
-  targetLang: string
-): string {
-  return `${sourceLang}:${targetLang}:${text}`;
+function cacheKey(text: string, targetLang: LangCode): string {
+  return `${SOURCE_LANG}:${targetLang}:${text}`;
 }
 
-export async function initCache(
-  sourceLang: string,
-  targetLang: string
-): Promise<void> {
+export async function initCache(targetLang: LangCode): Promise<void> {
   // Load static dictionary (JSON, bundled at build time) into memory
-  const { getStaticDictionary } = await import("../../shared/dictionary");
-  const dict = getStaticDictionary(sourceLang, targetLang);
+  const dict = getStaticDictionary(targetLang);
   if (dict) {
     for (const [original, translated] of Object.entries(dict)) {
-      const key = cacheKey(original, sourceLang, targetLang);
-      memoryCache.set(key, translated);
+      memoryCache.set(cacheKey(original, targetLang), translated);
     }
   }
 
   // Load IndexedDB entries into memory
   const allKeys = await keys(idbStore);
-  const prefix = `${sourceLang}:${targetLang}:`;
+  const prefix = `${SOURCE_LANG}:${targetLang}:`;
   for (const k of allKeys) {
     const keyStr = String(k);
     if (keyStr.startsWith(prefix)) {
@@ -39,21 +31,17 @@ export async function initCache(
     }
   }
 
-  console.log(`[qq-i18n] Cache loaded: ${memoryCache.size} entries`);
+  console.log(`[liteloaderqqnt-i18n] Cache loaded: ${memoryCache.size} entries`);
 }
 
-export function getCached(
-  text: string,
-  sourceLang: string,
-  targetLang: string
-): string | null {
+export function getCached(text: string, targetLang: LangCode): string | null {
   // Check memory cache first (synchronous)
-  const key = cacheKey(text, sourceLang, targetLang);
+  const key = cacheKey(text, targetLang);
   const cached = memoryCache.get(key);
   if (cached) return cached;
 
   // Check static dictionary
-  const staticResult = getStaticTranslation(text, sourceLang, targetLang);
+  const staticResult = getStaticTranslation(text, targetLang);
   if (staticResult) {
     memoryCache.set(key, staticResult);
     return staticResult;
@@ -65,16 +53,11 @@ export function getCached(
 export async function putCache(
   text: string,
   translated: string,
-  sourceLang: string,
-  targetLang: string
+  targetLang: LangCode
 ): Promise<void> {
-  const key = cacheKey(text, sourceLang, targetLang);
+  const key = cacheKey(text, targetLang);
   memoryCache.set(key, translated);
   await set(key, translated, idbStore);
-}
-
-export async function getCacheSize(): Promise<number> {
-  return (await keys(idbStore)).length;
 }
 
 export async function clearCache(): Promise<void> {

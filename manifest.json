@@ -2,10 +2,11 @@
   "manifest_version": 4,
   "type": "extension",
   "name": "QQ i18n",
-  "slug": "qq_i18n",
+  "slug": "liteloaderqqnt-i18n",
   "description": "Translate QQ's entire UI into any language",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "icon": "./res/icon.svg",
+  "thumb": "./res/icon.svg",
   "authors": [
     {
       "name": "Don",
@@ -20,6 +21,10 @@
   },
   "repository": {
     "repo": "0-don/LiteLoaderQQNT-i18n",
-    "branch": "main"
+    "branch": "main",
+    "release": {
+      "tag": "latest",
+      "file": "LiteLoaderQQNT-i18n.zip"
+    }
   }
 }

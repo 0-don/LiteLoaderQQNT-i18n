@@ -3,7 +3,7 @@ declare module "*.css" {
   export default content;
 }
 
-declare module "*.json" {
-  const value: Record<string, string>;
-  export default value;
+declare module "*.svg" {
+  const content: string;
+  export default content;
 }

@@ -1,22 +1,33 @@
 import {
+  ATTR,
   CHAT_MESSAGE_SELECTOR,
+  CHAT_PREVIEW_SELECTOR,
+  CHINESE_REGEX,
+  EDITOR_SELECTORS,
   MAX_TEXT_LENGTH,
   SKIP_SELECTORS,
   SKIP_TAGS,
-  TIMESTAMP_REGEX,
-} from "../../shared/constants";
+  TIMESTAMP_REGEX
+} from "../../shared/selectors";
 import { store } from "../store";
 
 export function shouldTranslate(element: Element, text: string): boolean {
-  // Already translated
-  if (element.hasAttribute("data-i18n-original")) return false;
-
   // Empty or single char
   const trimmed = text.trim();
   if (!trimmed || trimmed.length < 2) return false;
 
   // Skip tags
   if (SKIP_TAGS.has(element.tagName)) return false;
+
+  // Skip editable elements (inputs, textareas, contenteditable)
+  if (
+    element.tagName === "INPUT" ||
+    element.tagName === "TEXTAREA" ||
+    EDITOR_SELECTORS.some(
+      (s) => element.matches(s) || element.closest(s)
+    )
+  )
+    return false;
 
   // Timestamps and pure numbers
   if (TIMESTAMP_REGEX.test(trimmed)) return false;
@@ -35,7 +46,7 @@ export function shouldTranslate(element: Element, text: string): boolean {
   }
 
   // Chat previews in sidebar
-  if (element.closest(".summary-main")) {
+  if (element.closest(CHAT_PREVIEW_SELECTOR)) {
     return state.translateChatPreviews;
   }
 
@@ -57,4 +68,23 @@ export function isTextLeaf(element: Element): boolean {
   }
 
   return true;
+}
+
+/**
+ * Check if element has direct text nodes with Chinese content,
+ * even if it also has child elements (like dropdown triggers with icons).
+ */
+export function hasDirectChineseText(element: Element): boolean {
+  if (element.hasAttribute(ATTR.ORIGINAL)) return false;
+
+  for (const node of element.childNodes) {
+    if (
+      node.nodeType === Node.TEXT_NODE &&
+      node.textContent?.trim() &&
+      CHINESE_REGEX.test(node.textContent)
+    ) {
+      return true;
+    }
+  }
+  return false;
 }

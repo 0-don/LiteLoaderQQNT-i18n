@@ -1,28 +1,27 @@
-import { scanFullDocument, startObserver, stopObserver, toggleTranslation } from "./dom/observer";
+import { initChatButton } from "./dom/chat-button";
+import {
+  scanFullDocument,
+  startObserver,
+  stopObserver,
+  toggleTranslation
+} from "./dom/observer";
 import { restoreAll } from "./dom/replacer";
 import { initCache } from "./engine/cache";
 import { store } from "./store";
-import { initI18n } from "./ui/i18n";
+import "./ui/global.css";
 import { mountSettings } from "./ui/settings";
-import { injectStyles } from "./ui/styles";
 
 async function init() {
   // Load config from main process
   await store.getState().loadConfig();
   const state = store.getState();
 
-  // Init i18next for settings UI translations
-  await initI18n();
-
   console.log(
-    `[qq-i18n] Initializing: ${state.sourceLang} -> ${state.targetLang}, enabled: ${state.enabled}`
+    `[liteloaderqqnt-i18n] Initializing: ZH -> ${state.targetLang}, enabled: ${state.enabled}`
   );
 
   // Initialize translation cache (loads static dict + IndexedDB into memory)
-  await initCache(state.sourceLang, state.targetLang);
-
-  // Inject CSS
-  injectStyles();
+  await initCache(state.targetLang);
 
   // Start translation if enabled
   if (state.enabled) {
@@ -46,12 +45,11 @@ async function init() {
   // React to language changes (re-init cache and re-scan)
   store.subscribe(async (current, previous) => {
     if (
-      current.sourceLang !== previous.sourceLang ||
       current.targetLang !== previous.targetLang
     ) {
       stopObserver();
       restoreAll();
-      await initCache(current.sourceLang, current.targetLang);
+      await initCache(current.targetLang);
       if (current.enabled) {
         startObserver();
         scanFullDocument();
@@ -68,10 +66,13 @@ async function init() {
     });
   }
 
-  console.log("[qq-i18n] Ready");
+  // Inject translate button in chat toolbar
+  initChatButton();
+
+  console.log("[liteloaderqqnt-i18n] Ready");
 }
 
-init().catch((err) => console.error("[qq-i18n] Init failed:", err));
+init().catch((err) => console.error("[liteloaderqqnt-i18n] Init failed:", err));
 
 // Settings page hook (called by LiteLoader when user opens settings)
 export const onSettingWindowCreated = (view: HTMLDivElement) => {

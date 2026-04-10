@@ -1,4 +1,4 @@
-import { BATCH_DELAY_MS } from "../../shared/constants";
+import { BATCH_DELAY_MS, SOURCE_LANG, type LangCode } from "../../shared/constants";
 import { store } from "../store";
 import { getCached, putCache } from "./cache";
 
@@ -12,16 +12,13 @@ const pending = new Map<string, PendingRequest>();
 let batchTimer: ReturnType<typeof setTimeout> | null = null;
 let activeRequests = 0;
 let backoffMs = 0;
-let useFetchApi = true; // try renderer fetch first, fallback to IPC
+let useFetchApi = true;
 
-export function translate(
-  text: string,
-  priority: "ui" | "chat" = "ui"
-): Promise<string> {
-  const state = store.getState();
+export function translate(text: string): Promise<string> {
+  const { targetLang } = store.getState();
 
   // Check cache first (synchronous)
-  const cached = getCached(text, state.sourceLang, state.targetLang);
+  const cached = getCached(text, targetLang);
   if (cached) {
     store.getState().incrementStat("cacheHits");
     return Promise.resolve(cached);
@@ -43,7 +40,7 @@ export function translate(
     pending.set(text, {
       text,
       resolvers: [resolve],
-      rejecters: [reject],
+      rejecters: [reject]
     });
     store.getState().setQueueLength(pending.size);
     scheduleBatch();
@@ -59,8 +56,7 @@ function scheduleBatch() {
 }
 
 async function processBatch() {
-  const state = store.getState();
-  const maxConcurrency = state.maxConcurrency;
+  const { targetLang, maxConcurrency } = store.getState();
   const entries = [...pending.entries()];
 
   for (const [text, request] of entries) {
@@ -73,11 +69,11 @@ async function processBatch() {
     store.getState().setQueueLength(pending.size);
     activeRequests++;
 
-    callApi(text, state.sourceLang, state.targetLang)
+    callApi(text, targetLang)
       .then(async (translated) => {
         activeRequests--;
         backoffMs = 0;
-        await putCache(text, translated, state.sourceLang, state.targetLang);
+        await putCache(text, translated, targetLang);
         store.getState().incrementStat("apiCalls");
         for (const resolve of request.resolvers) resolve(translated);
         if (pending.size > 0) scheduleBatch();
@@ -87,11 +83,11 @@ async function processBatch() {
         store.getState().incrementStat("apiErrors");
 
         // Exponential backoff
-        backoffMs = Math.min(
-          (backoffMs || 1000) * 2,
-          30000
+        backoffMs = Math.min((backoffMs || 1000) * 2, 30000);
+        console.warn(
+          `[liteloaderqqnt-i18n] API error, backoff ${backoffMs}ms:`,
+          error.message
         );
-        console.warn(`[qq-i18n] API error, backoff ${backoffMs}ms:`, error.message);
 
         for (const reject of request.rejecters) reject(error);
         if (pending.size > 0) scheduleBatch();
@@ -99,17 +95,13 @@ async function processBatch() {
   }
 }
 
-async function callApi(
-  text: string,
-  sourceLang: string,
-  targetLang: string
-): Promise<string> {
-  const state = store.getState();
-  const url = `${state.apiUrl}/translate`;
+async function callApi(text: string, targetLang: LangCode): Promise<string> {
+  const { apiUrl } = store.getState();
+  const url = `${apiUrl}/translate`;
   const body = JSON.stringify({
     text,
-    source_lang: sourceLang,
-    target_lang: targetLang,
+    source_lang: SOURCE_LANG,
+    target_lang: targetLang
   });
 
   if (useFetchApi) {
@@ -117,31 +109,23 @@ async function callApi(
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body,
+        body
       });
       const data = await res.json();
       if (data.code === 200 && data.data) return data.data;
       throw new Error(data.message || `API returned code ${data.code}`);
     } catch (error) {
-      // If fetch fails due to CSP/CORS, fall back to IPC permanently
-      if (
-        error instanceof TypeError &&
-        error.message.includes("fetch")
-      ) {
-        console.warn("[qq-i18n] fetch blocked, switching to IPC fallback");
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        console.warn("[liteloaderqqnt-i18n] fetch blocked, switching to IPC fallback");
         useFetchApi = false;
-        return callApi(text, sourceLang, targetLang);
+        return callApi(text, targetLang);
       }
       throw error;
     }
   }
 
   // IPC fallback via main process net.request
-  const data = await window.qq_i18n.translate(text, sourceLang, targetLang);
+  const data = await window.liteloaderqqnt_i18n.translate(text, SOURCE_LANG, targetLang);
   if (data.code === 200 && data.data) return data.data;
   throw new Error(`API returned code ${data.code}`);
-}
-
-export function getQueueSize(): number {
-  return pending.size;
 }

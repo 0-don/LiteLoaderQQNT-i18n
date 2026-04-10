@@ -1,70 +1,25 @@
-import { DEBOUNCE_MS, SKIP_TAGS } from "../../shared/constants";
-import { getCached } from "../engine/cache";
-import { translate } from "../engine/translator";
+import { DEBOUNCE_MS } from "../../shared/constants";
+import { restoreAll } from "./replacer";
+import { isReplacing, walkNode } from "./walker";
 import { store } from "../store";
-import { isTextLeaf, shouldTranslate } from "./classifier";
-import { replaceText, restoreAll } from "./replacer";
 
 let observer: MutationObserver | null = null;
-let isReplacing = false;
+const shadowObservers: MutationObserver[] = [];
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingNodes: Node[] = [];
 
-function processElement(element: Element): void {
-  if (!isTextLeaf(element)) return;
+function observeShadow(root: ShadowRoot): void {
+  if (!observer) return;
+  if ((root as any).__i18nObserved) return;
+  (root as any).__i18nObserved = true;
 
-  const text = element.textContent?.trim();
-  if (!text) return;
-  if (!shouldTranslate(element, text)) return;
-
-  const state = store.getState();
-
-  // Try synchronous cache hit first (no flicker)
-  const cached = getCached(text, state.sourceLang, state.targetLang);
-  if (cached) {
-    isReplacing = true;
-    replaceText(element, text, cached);
-    isReplacing = false;
-    return;
-  }
-
-  // Queue for async translation
-  translate(text, "ui")
-    .then((translated) => {
-      // Element might have been removed from DOM by now
-      if (!element.isConnected) return;
-      // Might have already been translated by another path
-      if (element.hasAttribute("data-i18n-original")) return;
-
-      isReplacing = true;
-      replaceText(element, text, translated);
-      isReplacing = false;
-    })
-    .catch(() => {
-      // Translation failed, leave original text
-    });
-}
-
-function walkNode(node: Node): void {
-  if (node.nodeType === Node.TEXT_NODE) {
-    const parent = node.parentElement;
-    if (parent && !SKIP_TAGS.has(parent.tagName)) {
-      processElement(parent);
-    }
-    return;
-  }
-
-  if (node.nodeType !== Node.ELEMENT_NODE) return;
-  const element = node as Element;
-  if (SKIP_TAGS.has(element.tagName)) return;
-
-  // Process this element if it's a text leaf
-  processElement(element);
-
-  // Walk children
-  for (const child of element.children) {
-    walkNode(child);
-  }
+  const shadowObs = new MutationObserver(onMutation);
+  shadowObs.observe(root, {
+    childList: true,
+    subtree: true,
+    characterData: true
+  });
+  shadowObservers.push(shadowObs);
 }
 
 function flushPendingNodes(): void {
@@ -73,7 +28,7 @@ function flushPendingNodes(): void {
   pendingNodes = [];
 
   for (const node of nodes) {
-    walkNode(node);
+    walkNode(node, observeShadow);
   }
 }
 
@@ -105,10 +60,10 @@ export function startObserver(): void {
   observer.observe(document.body, {
     childList: true,
     subtree: true,
-    characterData: true,
+    characterData: true
   });
 
-  console.log("[qq-i18n] Observer started");
+  console.log("[liteloaderqqnt-i18n] Observer started");
 }
 
 export function stopObserver(): void {
@@ -116,18 +71,21 @@ export function stopObserver(): void {
   observer.disconnect();
   observer = null;
 
+  for (const obs of shadowObservers) obs.disconnect();
+  shadowObservers.length = 0;
+
   if (debounceTimer) {
     clearTimeout(debounceTimer);
     debounceTimer = null;
   }
   pendingNodes = [];
 
-  console.log("[qq-i18n] Observer stopped");
+  console.log("[liteloaderqqnt-i18n] Observer stopped");
 }
 
 export function scanFullDocument(): void {
-  console.log("[qq-i18n] Full document scan...");
-  walkNode(document.body);
+  console.log("[liteloaderqqnt-i18n] Full document scan...");
+  walkNode(document.body, observeShadow);
 }
 
 export function toggleTranslation(enabled: boolean): void {
