@@ -22,7 +22,7 @@
 
 **PluginInstaller**: 粘贴 `https://raw.githubusercontent.com/0-don/LiteLoaderQQNT-i18n/main/manifest.json`，重启 QQ。
 
-**手动安装**: 解压 ZIP 至 `LiteLoaderQQNT/plugins/`，重启 QQ。
+**手动安装**: 下载 ZIP，打开 LiteLoader 设置页面，点击「选择文件」导入 ZIP，重启 QQ。
 
 ## 构建
 

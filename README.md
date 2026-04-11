@@ -22,7 +22,7 @@ A [LiteLoaderQQNT](https://github.com/LiteLoaderQQNT/LiteLoaderQQNT) plugin that
 
 **PluginInstaller**: Paste `https://raw.githubusercontent.com/0-don/LiteLoaderQQNT-i18n/main/manifest.json` and restart QQ.
 
-**Manual**: Extract ZIP to `LiteLoaderQQNT/plugins/` and restart QQ.
+**Manual**: Download the ZIP, go to LiteLoader settings, click "Choose File", select the ZIP, and restart QQ.
 
 ## Build
 
