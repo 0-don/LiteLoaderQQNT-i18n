@@ -18,11 +18,11 @@ A [LiteLoaderQQNT](https://github.com/LiteLoaderQQNT/LiteLoaderQQNT) plugin that
 
 ## Installation
 
-**Plugin List Viewer**: Find "QQ i18n" and click Install, then restart QQ.
+This is a plugin for [LiteLoaderQQNT](https://github.com/LiteLoaderQQNT/LiteLoaderQQNT), a plugin loader for QQNT (similar to Vencord for Discord). Install LiteLoaderQQNT first, then install this plugin using one of these methods:
 
-**PluginInstaller**: Paste `https://raw.githubusercontent.com/0-don/LiteLoaderQQNT-i18n/main/manifest.json` and restart QQ.
-
-**Manual**: Download the ZIP, go to LiteLoader settings, click "Choose File", select the ZIP, and restart QQ.
+- **Plugin List Viewer**: Find "QQ i18n" and click Install, then restart QQ.
+- **PluginInstaller**: Paste `https://raw.githubusercontent.com/0-don/LiteLoaderQQNT-i18n/main/manifest.json` and restart QQ.
+- **Manual**: Download the ZIP, go to LiteLoader settings, click "Choose File", select the ZIP, and restart QQ.
 
 ## Build
 

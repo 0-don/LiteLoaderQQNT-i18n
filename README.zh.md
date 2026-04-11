@@ -18,11 +18,11 @@
 
 ## 安装方法
 
-**插件列表查看**: 搜索 "QQ i18n" 点击安装，重启 QQ。
+本插件基于 [LiteLoaderQQNT](https://github.com/LiteLoaderQQNT/LiteLoaderQQNT)（QQNT 的插件加载器，类似于 Discord 的 Vencord）。请先安装 LiteLoaderQQNT，然后通过以下方式安装本插件：
 
-**PluginInstaller**: 粘贴 `https://raw.githubusercontent.com/0-don/LiteLoaderQQNT-i18n/main/manifest.json`，重启 QQ。
-
-**手动安装**: 下载 ZIP，打开 LiteLoader 设置页面，点击「选择文件」导入 ZIP，重启 QQ。
+- **插件列表查看**: 搜索 "QQ i18n" 点击安装，重启 QQ。
+- **PluginInstaller**: 粘贴 `https://raw.githubusercontent.com/0-don/LiteLoaderQQNT-i18n/main/manifest.json`，重启 QQ。
+- **手动安装**: 下载 ZIP，打开 LiteLoader 设置页面，点击「选择文件」导入 ZIP，重启 QQ。
 
 ## 构建
 
