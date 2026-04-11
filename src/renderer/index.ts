@@ -45,9 +45,7 @@ async function init() {
 
   // React to language changes (re-init cache and re-scan)
   store.subscribe(async (current, previous) => {
-    if (
-      current.targetLang !== previous.targetLang
-    ) {
+    if (current.targetLang !== previous.targetLang) {
       stopObserver();
       restoreAll();
       await initCache(current.targetLang);

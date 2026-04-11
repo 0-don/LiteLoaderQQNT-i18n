@@ -218,7 +218,9 @@ function Settings() {
         data-type="secondary"
         style={{ display: "block", textAlign: "center", marginTop: "16px" }}
       >
-        QQ i18n v{LiteLoader.plugins["liteloaderqqnt-i18n"]?.manifest?.version ?? "0.0.0"}
+        QQ i18n v
+        {LiteLoader.plugins["liteloaderqqnt-i18n"]?.manifest?.version ??
+          "0.0.0"}
       </setting-text>
     </div>
   );

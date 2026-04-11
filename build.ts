@@ -119,25 +119,40 @@ async function runBuild() {
     const { targets } = (await res.json()) as {
       targets: { id: string; url: string }[];
     };
-    const target = targets.find(
-      (t) => t.url.includes("index.html") && !t.url.includes("hiddenWindow")
+    // Reload all QQ renderer windows (main, settings, etc.)
+    const reloadTargets = targets.filter(
+      (t) =>
+        t.url.includes("index.html") &&
+        !t.url.includes("chii_app") &&
+        !t.url.includes("hiddenWindow") &&
+        !t.url.includes("chatPoolWin")
     );
-    if (target) {
-      const ws = new WebSocket(
-        `ws://localhost:${CHII_PORT}/client/LiteLoader?target=${target.id}`
+    if (reloadTargets.length > 0) {
+      await Promise.all(
+        reloadTargets.map(
+          (t) =>
+            new Promise<void>((resolve) => {
+              const ws = new WebSocket(
+                `ws://localhost:${CHII_PORT}/client/LiteLoader?target=${t.id}`
+              );
+              ws.onopen = () => {
+                ws.send(
+                  JSON.stringify({
+                    id: 1,
+                    method: "Runtime.evaluate",
+                    params: { expression: "window.location.reload()" }
+                  })
+                );
+                setTimeout(() => {
+                  ws.close();
+                  resolve();
+                }, 200);
+              };
+              ws.onerror = () => resolve();
+            })
+        )
       );
-      ws.onopen = () => {
-        ws.send(
-          JSON.stringify({
-            id: 1,
-            method: "Runtime.evaluate",
-            params: { expression: "window.location.reload()" }
-          })
-        );
-        setTimeout(() => ws.close(), 200);
-      };
-      ws.onerror = () => {};
-      console.log("Reloaded QQ");
+      console.log(`Reloaded ${reloadTargets.length} QQ window(s)`);
     }
   } catch {}
 
