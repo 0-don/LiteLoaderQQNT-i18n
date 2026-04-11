@@ -24,11 +24,16 @@
 - **PluginInstaller**: 粘贴 `https://raw.githubusercontent.com/0-don/LiteLoaderQQNT-i18n/main/manifest.json`，重启 QQ。
 - **手动安装**: 下载 ZIP，打开 LiteLoader 设置页面，点击「选择文件」导入 ZIP，重启 QQ。
 
-## 构建
+## 开发
+
+需要 [Bun](https://bun.sh)。
 
 ```bash
-bun install && bun run build
+bun install
+bun run dev        # 构建 + 监听文件变更
 ```
+
+安装 [Chii DevTools](https://github.com/mo-jinran/chii-devtools) 后，每次构建会自动热重载所有已打开的 QQ 窗口。
 
 ## 许可证
 

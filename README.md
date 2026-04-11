@@ -24,11 +24,16 @@ This is a plugin for [LiteLoaderQQNT](https://github.com/LiteLoaderQQNT/LiteLoad
 - **PluginInstaller**: Paste `https://raw.githubusercontent.com/0-don/LiteLoaderQQNT-i18n/main/manifest.json` and restart QQ.
 - **Manual**: Download the ZIP, go to LiteLoader settings, click "Choose File", select the ZIP, and restart QQ.
 
-## Build
+## Development
+
+Requires [Bun](https://bun.sh).
 
 ```bash
-bun install && bun run build
+bun install
+bun run dev        # build + watch for changes
 ```
+
+If [Chii DevTools](https://github.com/mo-jinran/chii-devtools) is installed, builds will automatically hot-reload all open QQ windows.
 
 ## License
 
