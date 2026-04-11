@@ -1,5 +1,6 @@
 import { BATCH_DELAY_MS, SOURCE_LANG, type LangCode } from "../../shared/constants";
 import { store } from "../store";
+import { callTranslateApi } from "./api";
 import { getCached, putCache } from "./cache";
 
 interface PendingRequest {
@@ -12,7 +13,6 @@ const pending = new Map<string, PendingRequest>();
 let batchTimer: ReturnType<typeof setTimeout> | null = null;
 let activeRequests = 0;
 let backoffMs = 0;
-let useFetchApi = true;
 
 export function translate(text: string): Promise<string> {
   const { targetLang } = store.getState();
@@ -69,7 +69,7 @@ async function processBatch() {
     store.getState().setQueueLength(pending.size);
     activeRequests++;
 
-    callApi(text, targetLang)
+    callTranslateApi(text, SOURCE_LANG, targetLang)
       .then(async (translated) => {
         activeRequests--;
         backoffMs = 0;
@@ -95,37 +95,3 @@ async function processBatch() {
   }
 }
 
-async function callApi(text: string, targetLang: LangCode): Promise<string> {
-  const { apiUrl } = store.getState();
-  const url = `${apiUrl}/translate`;
-  const body = JSON.stringify({
-    text,
-    source_lang: SOURCE_LANG,
-    target_lang: targetLang
-  });
-
-  if (useFetchApi) {
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body
-      });
-      const data = await res.json();
-      if (data.code === 200 && data.data) return data.data;
-      throw new Error(data.message || `API returned code ${data.code}`);
-    } catch (error) {
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        console.warn("[liteloaderqqnt-i18n] fetch blocked, switching to IPC fallback");
-        useFetchApi = false;
-        return callApi(text, targetLang);
-      }
-      throw error;
-    }
-  }
-
-  // IPC fallback via main process net.request
-  const data = await window.liteloaderqqnt_i18n.translate(text, SOURCE_LANG, targetLang);
-  if (data.code === 200 && data.data) return data.data;
-  throw new Error(`API returned code ${data.code}`);
-}

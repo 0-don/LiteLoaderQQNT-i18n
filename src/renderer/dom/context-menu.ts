@@ -1,6 +1,7 @@
 import iconSvg from "../../../res/icon.svg";
 import { SOURCE_LANG, type LangCode } from "../../shared/constants";
 import { CHINESE_REGEX, EDITABLE_INPUT_SELECTOR } from "../../shared/selectors";
+import { callTranslateApi } from "../engine/api";
 import { store } from "../store";
 
 const ATTR_ORIGINAL = "data-i18n-input-original";
@@ -60,37 +61,6 @@ function detectDirection(text: string): { src: LangCode; tgt: LangCode } {
     return { src: SOURCE_LANG, tgt: targetLang };
   }
   return { src: targetLang, tgt: SOURCE_LANG };
-}
-
-async function callTranslateApi(
-  text: string,
-  srcLang: LangCode,
-  tgtLang: LangCode
-): Promise<string> {
-  const { apiUrl } = store.getState();
-  try {
-    const res = await fetch(`${apiUrl}/translate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        text,
-        source_lang: srcLang,
-        target_lang: tgtLang,
-      }),
-    });
-    const data = await res.json();
-    if (data.code === 200 && data.data) return data.data;
-    throw new Error(data.message || `API returned code ${data.code}`);
-  } catch (err) {
-    // IPC fallback
-    const data = await window.liteloaderqqnt_i18n.translate(
-      text,
-      srcLang,
-      tgtLang
-    );
-    if (data.code === 200 && data.data) return data.data;
-    throw new Error(`Translation failed: code ${data.code}`);
-  }
 }
 
 const ATTR_ORIGINAL_HTML = "data-i18n-input-original-html";
