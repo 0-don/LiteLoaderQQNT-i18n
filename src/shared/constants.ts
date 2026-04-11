@@ -20,7 +20,7 @@ export const DEFAULT_CONFIG: PluginConfig = {
   apiUrl: DEFAULT_API_URL,
   translateUILabels: true,
   translateChatPreviews: true,
-  translateChatMessages: false,
+  translateChatMessages: true,
   maxConcurrency: 3
 };
 
