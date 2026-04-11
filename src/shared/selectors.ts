@@ -35,6 +35,13 @@ export const EDITOR_SELECTORS = [
   ".qq-msg-editor"
 ] as const;
 
+// --- All editable inputs (for context menu targeting) ---
+export const EDITABLE_INPUT_SELECTOR =
+  "input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([readonly]):not([disabled]), " +
+  "textarea:not([readonly]):not([disabled]), " +
+  "[contenteditable='true'], " +
+  ".ProseMirror";
+
 // --- Chat content selectors ---
 export const CHAT_MESSAGE_SELECTOR = ".message-content";
 export const CHAT_PREVIEW_SELECTOR = ".summary-main";

@@ -1,4 +1,5 @@
 import { initChatButton } from "./dom/chat-button";
+import { initContextMenu } from "./dom/context-menu";
 import {
   scanFullDocument,
   startObserver,
@@ -68,6 +69,9 @@ async function init() {
 
   // Inject translate button in chat toolbar
   initChatButton();
+
+  // Global right-click translate on any editable input
+  initContextMenu();
 
   console.log("[liteloaderqqnt-i18n] Ready");
 }
