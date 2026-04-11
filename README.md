@@ -15,6 +15,9 @@ A [LiteLoaderQQNT](https://github.com/LiteLoaderQQNT/LiteLoaderQQNT) plugin that
 - **Shadow DOM Support** LiteLoader plugin UIs get translated too
 - **Vue Reversion Detection** Automatically re-translates when Vue re-renders and overwrites translations
 - **Chat Translate Button** One-click toolbar button to translate your input into Chinese
+- **Right-Click Translate** Right-click any editable input to translate its content, toggle between original and translated text
+- **Keyboard Shortcut** Press `Ctrl+Shift+T` to translate the currently focused input (works everywhere, even inputs without a right-click menu)
+- **Dropdown Translation** Dropdown menu options (pulldown selectors) are translated, including single-character items
 - **Custom API** Configure any DeepLX-compatible translation endpoint
 - **Statistics Dashboard** Monitor cache hit rate, API calls, queue length, and errors in real time
 - **Hover for Original** Hover over any translated element to see the original Chinese text

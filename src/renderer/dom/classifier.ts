@@ -12,9 +12,14 @@ import {
 import { store } from "../store";
 
 export function shouldTranslate(element: Element, text: string): boolean {
-  // Empty or single char
+  // Empty text
   const trimmed = text.trim();
-  if (!trimmed || trimmed.length < 2) return false;
+  if (!trimmed) return false;
+
+  // Single char is usually noise, but allow it inside dropdown/menu lists
+  if (trimmed.length < 2 && !element.closest(".q-pulldown-menu-list")) {
+    return false;
+  }
 
   // Skip tags
   if (SKIP_TAGS.has(element.tagName)) return false;

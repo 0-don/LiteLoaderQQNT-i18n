@@ -13,7 +13,7 @@ function isEditableElement(el: Element): el is HTMLElement {
   return el.matches(EDITABLE_INPUT_SELECTOR);
 }
 
-function findEditableAncestor(target: EventTarget | null): HTMLElement | null {
+export function findEditableAncestor(target: EventTarget | null): HTMLElement | null {
   if (!(target instanceof Element)) return null;
   if (isEditableElement(target)) return target;
   const ancestor = target.closest(EDITABLE_INPUT_SELECTOR);
@@ -33,10 +33,25 @@ function setInputText(el: HTMLElement, text: string): void {
     el.dispatchEvent(new Event("input", { bubbles: true }));
     return;
   }
-  // contenteditable / ProseMirror
-  el.focus();
-  document.execCommand("selectAll");
-  document.execCommand("insertText", false, text);
+  // contenteditable / ProseMirror: replace only text nodes, preserve images/embeds
+  replaceTextNodes(el, text);
+}
+
+function replaceTextNodes(el: HTMLElement, text: string): void {
+  const textNodes: Text[] = [];
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let node: Text | null;
+  while ((node = walker.nextNode() as Text | null)) {
+    if (node.textContent?.trim()) textNodes.push(node);
+  }
+
+  if (textNodes.length === 0) return;
+
+  // Put all translated text into the first text node, clear the rest
+  textNodes[0].textContent = text;
+  for (let i = 1; i < textNodes.length; i++) {
+    textNodes[i].textContent = "";
+  }
 }
 
 function detectDirection(text: string): { src: LangCode; tgt: LangCode } {
@@ -78,6 +93,46 @@ async function callTranslateApi(
   }
 }
 
+const ATTR_ORIGINAL_HTML = "data-i18n-input-original-html";
+
+export async function toggleTranslateInput(el: HTMLElement): Promise<void> {
+  if (el.hasAttribute(ATTR_ORIGINAL)) {
+    // Restore: use saved HTML for contenteditable (preserves images), plain text for inputs
+    const isContentEditable =
+      !(el instanceof HTMLInputElement) && !(el instanceof HTMLTextAreaElement);
+    if (isContentEditable && el.hasAttribute(ATTR_ORIGINAL_HTML)) {
+      el.innerHTML = el.getAttribute(ATTR_ORIGINAL_HTML)!;
+      el.removeAttribute(ATTR_ORIGINAL_HTML);
+    } else {
+      setInputText(el, el.getAttribute(ATTR_ORIGINAL)!);
+    }
+    el.removeAttribute(ATTR_ORIGINAL);
+    return;
+  }
+
+  const text = getInputText(el);
+  if (!text) return;
+
+  const { src, tgt } = detectDirection(text);
+  el.setAttribute(ATTR_ORIGINAL, text);
+
+  // Save full HTML for contenteditable so we can restore images/embeds
+  const isContentEditable =
+    !(el instanceof HTMLInputElement) && !(el instanceof HTMLTextAreaElement);
+  if (isContentEditable) {
+    el.setAttribute(ATTR_ORIGINAL_HTML, el.innerHTML);
+  }
+
+  try {
+    const translated = await callTranslateApi(text, src, tgt);
+    setInputText(el, translated);
+  } catch (err) {
+    console.error("[liteloaderqqnt-i18n] Translate failed:", err);
+    el.removeAttribute(ATTR_ORIGINAL);
+    el.removeAttribute(ATTR_ORIGINAL_HTML);
+  }
+}
+
 function injectMenuItem(menu: Element, inputEl: HTMLElement): void {
   const firstItem = menu.querySelector(
     ".q-context-menu-item:not([disabled='true'])"
@@ -102,31 +157,9 @@ function injectMenuItem(menu: Element, inputEl: HTMLElement): void {
     clone.textContent = label;
   }
 
-  clone.addEventListener("click", async () => {
+  clone.addEventListener("click", () => {
     menu.remove();
-
-    if (hasOriginal) {
-      // Restore original
-      const original = inputEl.getAttribute(ATTR_ORIGINAL)!;
-      setInputText(inputEl, original);
-      inputEl.removeAttribute(ATTR_ORIGINAL);
-      return;
-    }
-
-    // Translate
-    const text = getInputText(inputEl);
-    if (!text) return;
-
-    const { src, tgt } = detectDirection(text);
-    inputEl.setAttribute(ATTR_ORIGINAL, text);
-
-    try {
-      const translated = await callTranslateApi(text, src, tgt);
-      setInputText(inputEl, translated);
-    } catch (err) {
-      console.error("[liteloaderqqnt-i18n] Context menu translate failed:", err);
-      inputEl.removeAttribute(ATTR_ORIGINAL);
-    }
+    toggleTranslateInput(inputEl);
   });
 
   menu.appendChild(clone);
@@ -164,4 +197,13 @@ export function initContextMenu(): void {
     injectMenuItem(menu, capturedInput);
     appended = true;
   }).observe(document.body, { childList: true });
+
+  // Ctrl+Shift+T to translate focused input (works even without context menu)
+  document.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey && e.shiftKey && e.key === "T")) return;
+    const focused = findEditableAncestor(document.activeElement);
+    if (!focused) return;
+    e.preventDefault();
+    toggleTranslateInput(focused);
+  });
 }
