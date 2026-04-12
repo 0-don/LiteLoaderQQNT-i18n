@@ -2,6 +2,8 @@
 
 [English](./README.md) | 简体中文
 
+> 友情链接：[LINUX DO](https://linux.do/) — 新的理想型社区
+
 [LiteLoaderQQNT](https://github.com/LiteLoaderQQNT/LiteLoaderQQNT) 插件，将 QQ 的整个中文界面翻译为任意语言。无需 API 密钥。
 
 ![截图](./res/screenshots/1.png)

@@ -2,6 +2,8 @@
 
 English | [简体中文](./README.zh.md)
 
+> Friends: [LINUX DO](https://linux.do/) — 新的理想型社区
+
 A [LiteLoaderQQNT](https://github.com/LiteLoaderQQNT/LiteLoaderQQNT) plugin that translates QQ's entire Chinese UI into any language. No API key required.
 
 ![Screenshot](./res/screenshots/1.png)
