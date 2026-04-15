@@ -5,6 +5,7 @@ import { callTranslateApi } from "../engine/api";
 import { store } from "../store";
 
 const ATTR_ORIGINAL = "data-i18n-input-original";
+const ATTR_TRANSLATED = "data-i18n-input-translated";
 const MENU_ITEM_ID = "i18n-context-translate";
 
 let capturedInput: HTMLElement | null = null;
@@ -25,7 +26,7 @@ function getInputText(el: HTMLElement): string {
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     return el.value;
   }
-  return el.textContent?.trim() ?? "";
+  return el.textContent ?? "";
 }
 
 function setInputText(el: HTMLElement, text: string): void {
@@ -66,29 +67,41 @@ function detectDirection(text: string): { src: LangCode; tgt: LangCode } {
 const ATTR_ORIGINAL_HTML = "data-i18n-input-original-html";
 
 export async function toggleTranslateInput(el: HTMLElement): Promise<void> {
-  if (el.hasAttribute(ATTR_ORIGINAL)) {
-    // Restore: use saved HTML for contenteditable (preserves images), plain text for inputs
-    const isContentEditable =
-      !(el instanceof HTMLInputElement) && !(el instanceof HTMLTextAreaElement);
-    if (isContentEditable && el.hasAttribute(ATTR_ORIGINAL_HTML)) {
-      el.innerHTML = el.getAttribute(ATTR_ORIGINAL_HTML)!;
+  const isContentEditable =
+    !(el instanceof HTMLInputElement) && !(el instanceof HTMLTextAreaElement);
+
+  if (el.hasAttribute(ATTR_ORIGINAL) && el.hasAttribute(ATTR_TRANSLATED)) {
+    const original = el.getAttribute(ATTR_ORIGINAL)!;
+    const translated = el.getAttribute(ATTR_TRANSLATED)!;
+    const current = getInputText(el);
+
+    if (current === translated) {
+      if (isContentEditable && el.hasAttribute(ATTR_ORIGINAL_HTML)) {
+        el.innerHTML = el.getAttribute(ATTR_ORIGINAL_HTML)!;
+      } else {
+        setInputText(el, original);
+      }
+
+      el.removeAttribute(ATTR_ORIGINAL);
+      el.removeAttribute(ATTR_TRANSLATED);
       el.removeAttribute(ATTR_ORIGINAL_HTML);
-    } else {
-      setInputText(el, el.getAttribute(ATTR_ORIGINAL)!);
+      return;
     }
+
+    // Stale translation state from a previous message draft on the same editor.
+    // Clear it and continue translating the current draft in this same click.
     el.removeAttribute(ATTR_ORIGINAL);
-    return;
+    el.removeAttribute(ATTR_TRANSLATED);
+    el.removeAttribute(ATTR_ORIGINAL_HTML);
   }
 
   const text = getInputText(el);
-  if (!text) return;
+  if (!text.trim()) return;
 
   const { src, tgt } = detectDirection(text);
   el.setAttribute(ATTR_ORIGINAL, text);
 
   // Save full HTML for contenteditable so we can restore images/embeds
-  const isContentEditable =
-    !(el instanceof HTMLInputElement) && !(el instanceof HTMLTextAreaElement);
   if (isContentEditable) {
     el.setAttribute(ATTR_ORIGINAL_HTML, el.innerHTML);
   }
@@ -96,9 +109,11 @@ export async function toggleTranslateInput(el: HTMLElement): Promise<void> {
   try {
     const translated = await callTranslateApi(text, src, tgt);
     setInputText(el, translated);
+    el.setAttribute(ATTR_TRANSLATED, translated);
   } catch (err) {
     console.error("[liteloaderqqnt-i18n] Translate failed:", err);
     el.removeAttribute(ATTR_ORIGINAL);
+    el.removeAttribute(ATTR_TRANSLATED);
     el.removeAttribute(ATTR_ORIGINAL_HTML);
   }
 }
@@ -116,8 +131,9 @@ function injectMenuItem(menu: Element, inputEl: HTMLElement): void {
   const iconEl = clone.querySelector(".q-icon");
   if (iconEl) iconEl.innerHTML = iconSvg;
 
-  const hasOriginal = inputEl.hasAttribute(ATTR_ORIGINAL);
-  const label = hasOriginal ? "Show Original" : "Translate";
+  const hasTransformed =
+    inputEl.hasAttribute(ATTR_ORIGINAL) && inputEl.hasAttribute(ATTR_TRANSLATED);
+  const label = hasTransformed ? "Show Original" : "Translate";
 
   // Set label text
   const textEl = clone.querySelector(".q-context-menu-item__text");
