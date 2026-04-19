@@ -25,6 +25,7 @@ export interface I18nState extends PluginConfig {
   setTranslatedElements: (n: number) => void;
   loadConfig: () => Promise<void>;
   saveConfig: () => Promise<void>;
+  applyRemoteConfig: (config: PluginConfig) => void;
 }
 
 export const store = createZustandStore<I18nState>((set, get) => ({
@@ -69,6 +70,7 @@ export const store = createZustandStore<I18nState>((set, get) => ({
     const config = await window.liteloaderqqnt_i18n.getConfig();
     set(config);
   },
+  applyRemoteConfig: (config) => set(config),
   saveConfig: async () => {
     const state = get();
     const config: PluginConfig = {

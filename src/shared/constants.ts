@@ -6,6 +6,7 @@ export const SLUG_UNDERSCORE = "liteloaderqqnt_i18n";
 export const IPC = {
   GET_CONFIG: `LiteLoader.${SLUG}.getConfig`,
   SET_CONFIG: `LiteLoader.${SLUG}.setConfig`,
+  CONFIG_CHANGED: `LiteLoader.${SLUG}.configChanged`,
   TRANSLATE: `LiteLoader.${SLUG}.translate`,
   LOG: `LiteLoader.${SLUG}.log`
 } as const;

@@ -17,6 +17,11 @@ async function init() {
   await store.getState().loadConfig();
   const state = store.getState();
 
+  // Sync config changes made from other windows (e.g. settings window)
+  window.liteloaderqqnt_i18n.onConfigChanged((config) => {
+    store.getState().applyRemoteConfig(config);
+  });
+
   console.log(
     `[liteloaderqqnt-i18n] Initializing: ZH -> ${state.targetLang}, enabled: ${state.enabled}`
   );

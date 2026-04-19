@@ -19,6 +19,7 @@ export interface TranslationResponse {
 export interface QqI18nApi {
   getConfig: () => Promise<PluginConfig>;
   setConfig: (config: PluginConfig) => Promise<void>;
+  onConfigChanged: (listener: (config: PluginConfig) => void) => () => void;
   translate: (
     text: string,
     sourceLang: LangCode,

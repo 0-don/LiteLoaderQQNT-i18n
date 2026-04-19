@@ -1,4 +1,4 @@
-import { ipcMain, net } from "electron";
+import { ipcMain, net, webContents } from "electron";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { DEFAULT_CONFIG, IPC, SLUG } from "../shared/constants";
@@ -66,8 +66,13 @@ async function translateViaNet(
 
 ipcMain.handle(IPC.GET_CONFIG, () => readConfig());
 
-ipcMain.handle(IPC.SET_CONFIG, (_event, config: PluginConfig) => {
+ipcMain.handle(IPC.SET_CONFIG, (event, config: PluginConfig) => {
   writeConfig(config);
+  const senderId = event.sender.id;
+  for (const wc of webContents.getAllWebContents()) {
+    if (wc.isDestroyed() || wc.id === senderId) continue;
+    wc.send(IPC.CONFIG_CHANGED, config);
+  }
 });
 
 ipcMain.handle(
