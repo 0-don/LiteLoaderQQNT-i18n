@@ -8,6 +8,8 @@ A [LiteLoaderQQNT](https://github.com/LiteLoaderQQNT/LiteLoaderQQNT) plugin that
 
 ![Screenshot](./res/screenshots/1.png)
 
+> ⚠️ **Account ban risk.** Tencent actively detects modified QQNT clients. Since late 2024, users of LiteLoaderQQNT, NapCat, and similar loaders have reported account restrictions, forced phone/face verification, and permanent bans. PC enforcement is often delayed by several days, so a session that looks fine at the time can still trigger a ban later. Use a secondary/test account, never your primary one. If you just want an ad-free QQ without the risk, use Tencent's official lightweight client [TIM](https://im.qq.com/) instead. See [this thread](https://linux.do/t/topic/485908) for user reports.
+
 ## Features
 
 - Translates buttons, menus, settings, dropdowns, chat previews, and messages
